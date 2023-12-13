@@ -4,7 +4,7 @@
 
 ## Overview
 
-The Thai Text Processor is a command-line tool for processing Thai text files. It utilizes a customizable word replacement mechanism to update and modify the content of text files.
+Thai Text Processor is a command-line tool for processing Thai text files. It utilizes a customizable word replacement mechanism to update and modify the content of text files.
 
 ## Features
 
