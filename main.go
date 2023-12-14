@@ -8,50 +8,50 @@ import (
 	"regexp"
 )
 
-// TextProcessor represents a text processing utility.
-type TextProcessor struct{ Replacements map[string]string }
+// TextProc represents a text processing utility.
+type TextProc struct{ R map[string]string }
 
 // Process replaces words in the given text based on predefined replacements.
-func (p TextProcessor) Process(text string) string {
-	for word, replacement := range p.Replacements {
-		text = regexp.MustCompile(word).ReplaceAllString(text, replacement)
+func (p TextProc) Process(t string) string {
+	for w, r := range p.R {
+		t = regexp.MustCompile(w).ReplaceAllString(t, r)
 	}
-	return text
+	return t
 }
 
-// FileManager manages file-related operations using a TextProcessor.
-type FileManager struct{ Processor TextProcessor }
+// FileMgr manages file-related operations using a TextProc.
+type FileMgr struct{ P TextProc }
 
 // ProcessFile reads, processes, and writes the updated text to a file.
-func (m FileManager) ProcessFile(filename string) error {
-	data, err := os.ReadFile(filename)
+func (m FileMgr) ProcessFile(fname string) error {
+	data, err := os.ReadFile(fname)
 	if err != nil {
-		return fmt.Errorf("error reading file %s: %v", filename, err)
+		return fmt.Errorf("error reading file %s: %v", fname, err)
 	}
 
-	updatedText := m.Processor.Process(string(data))
-	if err := os.WriteFile(filename, []byte(updatedText), 0644); err != nil {
-		return fmt.Errorf("error writing file %s: %v", filename, err)
+	ut := m.P.Process(string(data))
+	if err := os.WriteFile(fname, []byte(ut), 0644); err != nil {
+		return fmt.Errorf("error writing file %s: %v", fname, err)
 	}
 
-	fmt.Printf("Text in %s has been updated.\n", filename)
+	fmt.Printf("Text in %s has been updated.\n", fname)
 	return nil
 }
 
-// initProcessor initializes a TextProcessor with replacements from a JSON file.
-func initProcessor() TextProcessor {
+// InitProc initializes a TextProc with replacements from a JSON file.
+func InitProc() TextProc {
 	file, err := os.Open("blacklist.json")
 	if err != nil {
 		panic(fmt.Errorf("error opening blacklist.json: %v", err))
 	}
 	defer file.Close()
 
-	var replacements map[string]string
-	if err := json.NewDecoder(file).Decode(&replacements); err != nil {
+	var r map[string]string
+	if err := json.NewDecoder(file).Decode(&r); err != nil {
 		panic(fmt.Errorf("error decoding blacklist.json: %v", err))
 	}
 
-	return TextProcessor{Replacements: replacements}
+	return TextProc{R: r}
 }
 
 func main() {
@@ -60,9 +60,9 @@ func main() {
 		panic(err)
 	}
 
-	manager := FileManager{Processor: initProcessor()}
-	for _, fileName := range txtFiles {
-		if err := manager.ProcessFile(fileName); err != nil {
+	manager := FileMgr{P: InitProc()}
+	for _, fname := range txtFiles {
+		if err := manager.ProcessFile(fname); err != nil {
 			fmt.Println(err)
 		}
 	}
