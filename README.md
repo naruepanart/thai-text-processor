@@ -24,7 +24,7 @@ cd thai-text-processor
 1. Ensure that you have Thai text files (with a `.txt` extension) in the same directory as the script.
 2. Run the script using the following command:
 
-```bash
+```go
 go run main.go
 ```
 
@@ -32,7 +32,9 @@ The script will process each Thai text file in the directory, applying word repl
 
 ## How to Build
 
-Run `go build -ldflags="-s -w" main.go`
+```go
+go build -ldflags="-s -w" main.go
+```
 
 ## Customization
 
@@ -42,7 +44,7 @@ To customize word replacements, open the `initializeThaiBlacklist` function in t
 
 Example:
 
-```go
+```json
 "example": "custom-replacement",
 ```
 
