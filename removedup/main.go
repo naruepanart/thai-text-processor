@@ -26,7 +26,7 @@ func dedupJSON(input []byte) ([]byte, error) {
 }
 
 func main() {
-	f := "your_file.json"
+	f := "../blacklist.json"
 	if i, err := os.ReadFile(f); err != nil {
 		fmt.Println("Error reading file:", err)
 	} else if o, err := dedupJSON(i); err != nil {
