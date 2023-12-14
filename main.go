@@ -8,33 +8,42 @@ import (
 	"regexp"
 )
 
-type TextProc struct{ Replacements map[string]string }
+// TextProcessor processes text based on replacement rules.
+type TextProcessor struct {
+	Replacements map[string]string
+}
 
-func (p TextProc) Process(text string) string {
-	for word, replacement := range p.Replacements {
-		text = regexp.MustCompile(word).ReplaceAllString(text, replacement)
+// Process applies replacements to the given text.
+func (tp TextProcessor) Process(text string) string {
+	for pattern, replacement := range tp.Replacements {
+		text = regexp.MustCompile(pattern).ReplaceAllString(text, replacement)
 	}
 	return text
 }
 
-type FileMgr struct{ Processor TextProc }
+// FileManager manages processing files using a TextProcessor.
+type FileManager struct {
+	Processor TextProcessor
+}
 
-func (m FileMgr) ProcessFile(filename string) error {
+// ProcessFile reads, processes, and writes the updated text to the file.
+func (fm FileManager) ProcessFile(filename string) error {
 	data, err := os.ReadFile(filename)
 	if err != nil {
-		return fmt.Errorf("error reading %s: %v", filename, err)
+		return fmt.Errorf("error reading file %s: %v", filename, err)
 	}
 
-	updatedText := m.Processor.Process(string(data))
+	updatedText := fm.Processor.Process(string(data))
 	if err := os.WriteFile(filename, []byte(updatedText), 0644); err != nil {
-		return fmt.Errorf("error writing %s: %v", filename, err)
+		return fmt.Errorf("error writing file %s: %v", filename, err)
 	}
 
 	fmt.Printf("Text in %s updated.\n", filename)
 	return nil
 }
 
-func InitProc() TextProc {
+// NewProcessor creates a TextProcessor with predefined replacements.
+func NewProcessor() TextProcessor {
 	file, err := os.Open("blacklist.json")
 	if err != nil {
 		panic(fmt.Errorf("error opening blacklist.json: %v", err))
@@ -46,11 +55,12 @@ func InitProc() TextProc {
 		panic(fmt.Errorf("error decoding blacklist.json: %v", err))
 	}
 
+	// Additional replacements
 	replacements[`(\d+)-(\d+)`] = `${1}ถึง${2}`
 	replacements[`(\p{L}+)\s+\(`] = `${1} หรือ `
 	replacements[`(\s*\))`] = ``
 
-	return TextProc{Replacements: replacements}
+	return TextProcessor{Replacements: replacements}
 }
 
 func main() {
@@ -59,9 +69,9 @@ func main() {
 		panic(err)
 	}
 
-	manager := FileMgr{Processor: InitProc()}
+	fileManager := FileManager{Processor: NewProcessor()}
 	for _, filename := range textFiles {
-		if err := manager.ProcessFile(filename); err != nil {
+		if err := fileManager.ProcessFile(filename); err != nil {
 			fmt.Println(err)
 		}
 	}
