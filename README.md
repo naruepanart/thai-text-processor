@@ -1,7 +1,5 @@
 # Thai Text Processor
 
-[![License](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
-
 ## Overview
 
 Thai Text Processor is a command-line tool for processing Thai text files. It utilizes a customizable word replacement mechanism to update and modify the content of text files.
@@ -31,6 +29,10 @@ go run main.go
 ```
 
 The script will process each Thai text file in the directory, applying word replacements based on the specified blacklist.
+
+## How to Build
+
+Run `go build -ldflags="-s -w" main.go`
 
 ## Customization
 
