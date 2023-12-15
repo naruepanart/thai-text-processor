@@ -1,75 +1,33 @@
-# Thai Text Processor
+# Text Replacer
 
-## Overview
+This simple Go program, `main.go`, is designed to process text files by replacing specified patterns with corresponding values. It can be particularly useful for automating text modifications across multiple files.
 
-Thai Text Processor is a command-line tool for processing Thai text files. It utilizes a customizable word replacement mechanism to update and modify the content of text files.
+## How it Works
 
-## Features
+1. **Loading Replacements:**
+   - The program starts by loading a set of replacements from a JSON file named `blacklist.json`. This file contains a map of patterns to replace and their corresponding replacements.
 
-- Thai language text processing
-- Customizable word replacement using a blacklist
-- Command-line interface for easy integration into scripts or workflows
+2. **Processing Text:**
+   - For each text file in the current directory with a `.txt` extension, the program reads the content and applies the replacements defined in the loaded JSON file.
+   - Additional replacements are defined within the code itself to showcase the flexibility of the tool.
 
-## Installation
+3. **Saving Changes:**
+   - The updated text is then written back to the original file, overwriting its content.
 
-Clone the repository to your local machine and navigate to the project directory.
+## How to Use
 
-```bash
-git clone https://github.com/naruepanart/thai-text-processor.git
-cd thai-text-processor
-```
+1. Ensure your text files are in the same directory as the `main.go` file.
+2. Customize the `blacklist.json` file with your desired patterns and replacements.
+3. Run the program using the command:
 
-## Usage
-
-1. Ensure that you have Thai text files (with a `.txt` extension) in the same directory as the script.
-2. Run the script using the following command:
-
-```go
-go run main.go
-```
-
-The script will process each Thai text file in the directory, applying word replacements based on the specified blacklist.
-
-## How to Build
-
-```go
+```go 
 go build -ldflags="-s -w" main.go
 ```
 
-## Customization
+## Additional Customization
 
-### Adding or Modifying Word Replacements
+Feel free to modify the code to add or customize replacements based on your specific needs. The program is currently set up to replace numeric ranges, clean up parentheses, and modify certain linguistic constructs.
 
-To customize word replacements, open the `initializeThaiBlacklist` function in the `main.go` file. Add or modify entries as needed. The format is `"original word": "replacement"`.
+## Disclaimer
 
-Example:
-
-```json
-"example": "custom-replacement",
-```
-
-## Contributing
-
-If you would like to contribute to the project, please follow these steps:
-
-1. Fork the repository.
-2. Create a new branch for your feature or bug fix.
-3. Make your changes and commit them with descriptive commit messages.
-4. Push your changes to your fork.
-5. Open a pull request, explaining the purpose and benefits of your changes.
-
-## License
-
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
-
-## Acknowledgments
-
-Special thanks to the contributors and libraries that make this project possible.
-
-- [Regular Expressions Package](https://golang.org/pkg/regexp/)
-
-## Contact
-
-For any questions or concerns, feel free to reach out:
-
-- Email: naruepanart1201@gmail.com
+This tool directly modifies the content of text files. Use it responsibly and make sure to have backups of your files before running the program, especially when experimenting with new replacement patterns.
