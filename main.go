@@ -8,41 +8,36 @@ import (
 	"regexp"
 )
 
-// TextProcessor processes text based on replacement rules.
 type TextProcessor struct {
-	Replacements map[string]string
+	Repl map[string]string
 }
 
-// Process applies replacements to the given text.
-func (tp TextProcessor) Process(text string) string {
-	for pattern, replacement := range tp.Replacements {
-		text = regexp.MustCompile(pattern).ReplaceAllString(text, replacement)
+func (tp TextProcessor) Process(txt string) string {
+	for pat, repl := range tp.Repl {
+		txt = regexp.MustCompile(pat).ReplaceAllString(txt, repl)
 	}
-	return text
+	return txt
 }
 
-// FileManager manages processing files using a TextProcessor.
 type FileManager struct {
-	Processor TextProcessor
+	Proc TextProcessor
 }
 
-// ProcessFile reads, processes, and writes the updated text to the file.
-func (fm FileManager) ProcessFile(filename string) error {
-	data, err := os.ReadFile(filename)
+func (fm FileManager) ProcessFile(fn string) error {
+	data, err := os.ReadFile(fn)
 	if err != nil {
-		return fmt.Errorf("error reading file %s: %v", filename, err)
+		return fmt.Errorf("error reading file %s: %v", fn, err)
 	}
 
-	updatedText := fm.Processor.Process(string(data))
-	if err := os.WriteFile(filename, []byte(updatedText), 0644); err != nil {
-		return fmt.Errorf("error writing file %s: %v", filename, err)
+	updatedText := fm.Proc.Process(string(data))
+	if err := os.WriteFile(fn, []byte(updatedText), 0644); err != nil {
+		return fmt.Errorf("error writing file %s: %v", fn, err)
 	}
 
-	fmt.Printf("Text in %s updated.\n", filename)
+	fmt.Printf("Text in %s updated.\n", fn)
 	return nil
 }
 
-// NewProcessor creates a TextProcessor with predefined replacements.
 func NewProcessor() TextProcessor {
 	file, err := os.Open("blacklist.json")
 	if err != nil {
@@ -50,28 +45,27 @@ func NewProcessor() TextProcessor {
 	}
 	defer file.Close()
 
-	var replacements map[string]string
-	if err := json.NewDecoder(file).Decode(&replacements); err != nil {
+	var repl map[string]string
+	if err := json.NewDecoder(file).Decode(&repl); err != nil {
 		panic(fmt.Errorf("error decoding blacklist.json: %v", err))
 	}
 
-	// Additional replacements
-	replacements[`(\d+)-(\d+)`] = `${1}ถึง${2}`
-	replacements[`(\p{L}+)\s+\(`] = `${1} หรือ `
-	replacements[`(\s*\))`] = ``
+	repl[`(\d+)-(\d+)`] = `${1}ถึง${2}`
+	repl[`(\p{L}+)\s+\(`] = `${1} หรือ `
+	repl[`(\s*\))`] = ``
 
-	return TextProcessor{Replacements: replacements}
+	return TextProcessor{Repl: repl}
 }
 
 func main() {
-	textFiles, err := filepath.Glob("*.txt")
+	txtFiles, err := filepath.Glob("*.txt")
 	if err != nil {
 		panic(err)
 	}
 
-	fileManager := FileManager{Processor: NewProcessor()}
-	for _, filename := range textFiles {
-		if err := fileManager.ProcessFile(filename); err != nil {
+	fm := FileManager{Proc: NewProcessor()}
+	for _, fn := range txtFiles {
+		if err := fm.ProcessFile(fn); err != nil {
 			fmt.Println(err)
 		}
 	}
