@@ -7,31 +7,31 @@ import (
 )
 
 func dedupJSON(input []byte) ([]byte, error) {
-	var d map[string]interface{}
-	if err := json.Unmarshal(input, &d); err != nil {
+	var data map[string]interface{}
+	if err := json.Unmarshal(input, &data); err != nil {
 		return nil, err
 	}
 
-	s := make(map[string]bool)
-	for k := range d {
-		if s[k] {
-			delete(d, k)
+	seenKeys := make(map[string]bool)
+	for key := range data {
+		if seenKeys[key] {
+			delete(data, key)
 		} else {
-			s[k] = true
+			seenKeys[key] = true
 		}
 	}
 
-	r, err := json.Marshal(d)
-	return r, err
+	result, err := json.Marshal(data)
+	return result, err
 }
 
 func main() {
-	f := "../blacklist.json"
-	if i, err := os.ReadFile(f); err != nil {
+	filePath := "../blacklist.json"
+	if input, err := os.ReadFile(filePath); err != nil {
 		fmt.Println("Error reading file:", err)
-	} else if o, err := dedupJSON(i); err != nil {
+	} else if output, err := dedupJSON(input); err != nil {
 		fmt.Println("Error removing duplicates:", err)
-	} else if err := os.WriteFile(f, o, 0644); err != nil {
+	} else if err := os.WriteFile(filePath, output, 0644); err != nil {
 		fmt.Println("Error writing to file:", err)
 	} else {
 		fmt.Println("Duplicates removed successfully.")
