@@ -67,8 +67,6 @@ func main() {
 
 	repl := loadReplacements("blacklist.json")
 	repl[`(\d+)-(\d+)`] = `${1}ถึง${2}`
-	repl[`(\p{L}+)\s+\(`] = `${1} หรือ `
-	repl[`(\s*\))`] = ``
 
 	for _, filename := range txtFiles {
 		if err := processFile(filename, repl); err != nil {
