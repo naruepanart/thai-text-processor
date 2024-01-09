@@ -6,13 +6,23 @@ import (
 	"os"
 )
 
-func dedupJSON(input []byte) ([]byte, error) {
-	var data map[string]interface{}
-	if err := json.Unmarshal(input, &data); err != nil {
-		return nil, err
+func main() {
+	filePath := "../blacklist-yt/blacklist.json"
+
+	input, err := os.ReadFile(filePath)
+	if err != nil {
+		fmt.Println("Error reading file:", err)
+		return
 	}
 
-	seenKeys := make(map[string]bool)
+	var data map[string]interface{}
+	if err := json.Unmarshal(input, &data); err != nil {
+		fmt.Println("Error unmarshalling JSON:", err)
+		return
+	}
+
+	// Use a stack-allocated array for seenKeys
+	seenKeys := make(map[string]bool, len(data))
 	for key := range data {
 		if seenKeys[key] {
 			delete(data, key)
@@ -21,19 +31,17 @@ func dedupJSON(input []byte) ([]byte, error) {
 		}
 	}
 
-	result, err := json.Marshal(data)
-	return result, err
-}
-
-func main() {
-	filePath := "../blacklist-yt/blacklist.json"
-	if input, err := os.ReadFile(filePath); err != nil {
-		fmt.Println("Error reading file:", err)
-	} else if output, err := dedupJSON(input); err != nil {
-		fmt.Println("Error removing duplicates:", err)
-	} else if err := os.WriteFile(filePath, output, 0644); err != nil {
-		fmt.Println("Error writing to file:", err)
-	} else {
-		fmt.Println("Duplicates removed successfully.")
+	output, err := json.Marshal(data)
+	if err != nil {
+		fmt.Println("Error marshalling JSON:", err)
+		return
 	}
+
+	err = os.WriteFile(filePath, output, 0644)
+	if err != nil {
+		fmt.Println("Error writing to file:", err)
+		return
+	}
+
+	fmt.Println("Duplicates removed successfully.")
 }
