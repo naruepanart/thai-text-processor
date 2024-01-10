@@ -9,20 +9,25 @@ import (
 func main() {
 	filePath := "../blacklist-yt/blacklist.json"
 
-	input, err := os.ReadFile(filePath)
+	// Open the file for reading
+	file, err := os.Open(filePath)
 	if err != nil {
-		fmt.Println("Error reading file:", err)
+		fmt.Println("Error opening file:", err)
 		return
 	}
+	defer file.Close()
 
-	var data map[string]interface{}
-	if err := json.Unmarshal(input, &data); err != nil {
-		fmt.Println("Error unmarshalling JSON:", err)
-		return
-	}
+	decoder := json.NewDecoder(file)
 
 	// Use a stack-allocated array for seenKeys
-	seenKeys := make(map[string]bool, len(data))
+	seenKeys := make(map[string]bool)
+	var data map[string]interface{}
+	if err := decoder.Decode(&data); err != nil {
+		fmt.Println("Error decoding JSON:", err)
+		return
+	}
+
+	// Filtering out duplicate keys
 	for key := range data {
 		if seenKeys[key] {
 			delete(data, key)
@@ -31,15 +36,19 @@ func main() {
 		}
 	}
 
-	output, err := json.Marshal(data)
+	// Open the file for writing
+	file, err = os.Create(filePath)
 	if err != nil {
-		fmt.Println("Error marshalling JSON:", err)
+		fmt.Println("Error creating file:", err)
 		return
 	}
+	defer file.Close()
 
-	err = os.WriteFile(filePath, output, 0644)
-	if err != nil {
-		fmt.Println("Error writing to file:", err)
+	encoder := json.NewEncoder(file)
+
+	// Encode and write the filtered data
+	if err := encoder.Encode(data); err != nil {
+		fmt.Println("Error encoding and writing JSON:", err)
 		return
 	}
 
