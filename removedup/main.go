@@ -6,21 +6,28 @@ import (
 	"os"
 )
 
+type BlacklistEntry struct {
+	// Define a struct with only necessary fields
+	Key   string      `json:"key"`
+	Value interface{} `json:"value"`
+}
+
 func main() {
 	filePath := "../blacklist-yt/blacklist.json"
 
 	// Open the file for reading
-	file, err := os.Open(filePath)
+	inputFile, err := os.Open(filePath)
 	if err != nil {
 		fmt.Println("Error opening file:", err)
 		return
 	}
-	defer file.Close()
+	defer inputFile.Close()
 
-	decoder := json.NewDecoder(file)
+	decoder := json.NewDecoder(inputFile)
 
-	// Use a stack-allocated array for seenKeys
-	seenKeys := make(map[string]bool)
+	// Use a slice with a predefined capacity for seenKeys
+	const maxKeys = 100 // Adjust the capacity based on your needs
+	var seenKeys = make([]string, 0, maxKeys)
 	var data map[string]interface{}
 	if err := decoder.Decode(&data); err != nil {
 		fmt.Println("Error decoding JSON:", err)
@@ -29,22 +36,28 @@ func main() {
 
 	// Filtering out duplicate keys
 	for key := range data {
-		if seenKeys[key] {
-			delete(data, key)
-		} else {
-			seenKeys[key] = true
+		found := false
+		for i := 0; i < len(seenKeys); i++ {
+			if seenKeys[i] == key {
+				delete(data, key)
+				found = true
+				break
+			}
+		}
+		if !found {
+			seenKeys = append(seenKeys, key)
 		}
 	}
 
 	// Open the file for writing
-	file, err = os.Create(filePath)
+	outputFile, err := os.Create(filePath)
 	if err != nil {
 		fmt.Println("Error creating file:", err)
 		return
 	}
-	defer file.Close()
+	defer outputFile.Close()
 
-	encoder := json.NewEncoder(file)
+	encoder := json.NewEncoder(outputFile)
 
 	// Encode and write the filtered data
 	if err := encoder.Encode(data); err != nil {
