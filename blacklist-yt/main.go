@@ -24,9 +24,11 @@ func main() {
 	}
 
 	// Precompile regular expressions
-	compiledReplacements := make(map[*regexp.Regexp]string)
+	compiledReplacements := make([]*regexp.Regexp, 0, len(blacklistReplacements))
+	replacementValues := make([]string, 0, len(blacklistReplacements))
 	for pattern, replacement := range blacklistReplacements {
-		compiledReplacements[regexp.MustCompile(pattern)] = replacement
+		compiledReplacements = append(compiledReplacements, regexp.MustCompile(pattern))
+		replacementValues = append(replacementValues, replacement)
 	}
 
 	// Process all text files in the current directory
@@ -58,12 +60,12 @@ func main() {
 			}
 
 			// Process text and update file content
-			updatedText := string(buf[:n])
-			for pattern, replacement := range compiledReplacements {
-				updatedText = pattern.ReplaceAllString(updatedText, replacement)
+			updatedText := buf[:n]
+			for i, pattern := range compiledReplacements {
+				updatedText = pattern.ReplaceAll(updatedText, []byte(replacementValues[i]))
 			}
 
-			updatedTextBuilder = append(updatedTextBuilder, []byte(updatedText)...)
+			updatedTextBuilder = append(updatedTextBuilder, updatedText...)
 		}
 
 		// Use stack memory to write updated content to file
