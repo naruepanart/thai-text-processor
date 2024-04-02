@@ -10,35 +10,34 @@ import (
 )
 
 func main() {
-	// Load replacements from blacklist.json
-	blacklistFile, err := os.Open("blacklist.json")
+	// Open and parse blacklist JSON
+	blacklist, err := os.Open("blacklist.json")
 	if err != nil {
 		panic(fmt.Errorf("failed to open blacklist.json: %v", err))
 	}
-	defer blacklistFile.Close()
+	defer blacklist.Close()
 
-	// Parse JSON content from blacklist file
-	var blacklistReplacements map[string]string
-	if err := json.NewDecoder(blacklistFile).Decode(&blacklistReplacements); err != nil {
+	var replacements map[string]string
+	if err := json.NewDecoder(blacklist).Decode(&replacements); err != nil {
 		panic(fmt.Errorf("failed to decode blacklist.json: %v", err))
 	}
 
-	// Precompile regular expressions
-	compiledReplacements := make([]*regexp.Regexp, 0, len(blacklistReplacements))
-	replacementValues := make([]string, 0, len(blacklistReplacements))
-	for pattern, replacement := range blacklistReplacements {
-		compiledReplacements = append(compiledReplacements, regexp.MustCompile(pattern))
-		replacementValues = append(replacementValues, replacement)
+	// Compile regex patterns
+	patterns := make([]*regexp.Regexp, 0, len(replacements))
+	values := make([]string, 0, len(replacements))
+	for pattern, value := range replacements {
+		patterns = append(patterns, regexp.MustCompile(pattern))
+		values = append(values, value)
 	}
 
-	// Process all text files in the current directory
+	// Process text files
 	txtFiles, err := filepath.Glob("*.txt")
 	if err != nil {
 		panic(err)
 	}
 
 	for _, txtFile := range txtFiles {
-		// Read file content in chunks to minimize heap allocations
+		// Open file
 		file, err := os.Open(txtFile)
 		if err != nil {
 			fmt.Println(fmt.Errorf("failed to open file %s: %v", txtFile, err))
@@ -46,8 +45,8 @@ func main() {
 		}
 		defer file.Close()
 
-		var updatedTextBuilder []byte
-		buf := make([]byte, 1024) // Adjust the buffer size based on your file characteristics
+		var updated []byte
+		buf := make([]byte, 1024)
 
 		for {
 			n, err := file.Read(buf)
@@ -59,17 +58,17 @@ func main() {
 				break
 			}
 
-			// Process text and update file content
-			updatedText := buf[:n]
-			for i, pattern := range compiledReplacements {
-				updatedText = pattern.ReplaceAll(updatedText, []byte(replacementValues[i]))
+			// Process and update text
+			text := buf[:n]
+			for i, pattern := range patterns {
+				text = pattern.ReplaceAll(text, []byte(values[i]))
 			}
 
-			updatedTextBuilder = append(updatedTextBuilder, updatedText...)
+			updated = append(updated, text...)
 		}
 
-		// Use stack memory to write updated content to file
-		err = os.WriteFile(txtFile, updatedTextBuilder, os.ModePerm)
+		// Write updated content to file
+		err = os.WriteFile(txtFile, updated, os.ModePerm)
 		if err != nil {
 			fmt.Println(fmt.Errorf("failed to write file %s: %v", txtFile, err))
 			continue
