@@ -10,71 +10,100 @@ import (
 )
 
 func main() {
-	f, err := os.Open("blacklist.json")
+	if err := processFiles(); err != nil {
+		fmt.Printf("Error: %v\n", err)
+	}
+}
+
+func processFiles() error {
+	bl, err := loadBlacklist("blacklist.json")
 	if err != nil {
-		panic(fmt.Errorf("open blacklist.json: %v", err))
+		return fmt.Errorf("loading blacklist: %v", err)
+	}
+
+	rx, rp, err := compileRegex(bl)
+	if err != nil {
+		return fmt.Errorf("compiling regex: %v", err)
+	}
+
+	files, err := filepath.Glob("*.txt")
+	if err != nil {
+		return fmt.Errorf("glob: %v", err)
+	}
+
+	for _, fn := range files {
+		if err := processFile(fn, rx, rp); err != nil {
+			fmt.Printf("Error processing %s: %v\n", fn, err)
+		}
+	}
+
+	return nil
+}
+
+func loadBlacklist(filename string) (map[string]string, error) {
+	f, err := os.Open(filename)
+	if err != nil {
+		return nil, err
 	}
 	defer f.Close()
 
-	bl := make(map[string]string)
+	var bl map[string]string
 	if err := json.NewDecoder(f).Decode(&bl); err != nil {
-		panic(fmt.Errorf("decode blacklist.json: %v", err))
+		return nil, err
 	}
+	return bl, nil
+}
 
-	rx := make([]*regexp.Regexp, 0, len(bl))
-	rp := make([][]byte, 0, len(bl))
+func compileRegex(bl map[string]string) ([]*regexp.Regexp, [][]byte, error) {
+	var rx []*regexp.Regexp
+	var rp [][]byte
+
 	for p, r := range bl {
 		re, err := regexp.Compile(p)
 		if err != nil {
-			panic(fmt.Errorf("compile regex %s: %v", p, err))
+			return nil, nil, err
 		}
 		rx = append(rx, re)
 		rp = append(rp, []byte(r))
 	}
 
-	files, err := filepath.Glob("*.txt")
+	return rx, rp, nil
+}
+
+func processFile(filename string, rx []*regexp.Regexp, rp [][]byte) error {
+	file, err := os.OpenFile(filename, os.O_RDWR, os.ModePerm)
 	if err != nil {
-		panic(fmt.Errorf("glob: %v", err))
+		return err
+	}
+	defer file.Close()
+
+	var updated []byte
+	buf := make([]byte, 1024)
+
+	for {
+		n, err := file.Read(buf)
+		if err != nil && err != io.EOF {
+			return err
+		}
+		if n == 0 {
+			break
+		}
+
+		txt := buf[:n]
+		for i, re := range rx {
+			txt = re.ReplaceAll(txt, rp[i])
+		}
+
+		updated = append(updated, txt...)
 	}
 
-	for _, fn := range files {
-		file, err := os.OpenFile(fn, os.O_RDWR, os.ModePerm)
-		if err != nil {
-			fmt.Println(fmt.Errorf("open file %s: %v", fn, err))
-			continue
-		}
-		defer file.Close()
-
-		var updated []byte
-		buf := make([]byte, 1024)
-
-		for {
-			n, err := file.Read(buf)
-			if err == io.EOF {
-				break
-			}
-			if err != nil {
-				fmt.Println(fmt.Errorf("read file %s: %v", fn, err))
-				break
-			}
-
-			txt := buf[:n]
-			for i, re := range rx {
-				txt = re.ReplaceAll(txt, rp[i])
-			}
-
-			updated = append(updated, txt...)
-		}
-
-		if err := os.Truncate(fn, 0); err != nil {
-			fmt.Println(fmt.Errorf("truncate file %s: %v", fn, err))
-			continue
-		}
-		if _, err := file.WriteAt(updated, 0); err != nil {
-			fmt.Println(fmt.Errorf("write file %s: %v", fn, err))
-			continue
-		}
-
-		fmt.Printf("Text in %s updated.\n", fn)
+	if err := os.Truncate(filename, 0); err != nil {
+		return err
 	}
+	if _, err := file.WriteAt(updated, 0); err != nil {
+		return err
+	}
+
+	fmt.Printf("Text in %s updated.\n", filename)
+	return nil
 }
