@@ -10,37 +10,33 @@ import (
 )
 
 func main() {
-	// Open and parse blacklist JSON
-	blacklist, err := os.Open("blacklist.json")
+	b, err := os.Open("blacklist.json")
 	if err != nil {
-		panic(fmt.Errorf("failed to open blacklist.json: %v", err))
+		panic(fmt.Errorf("open blacklist.json: %v", err))
 	}
-	defer blacklist.Close()
+	defer b.Close()
 
-	var replacements map[string]string
-	if err := json.NewDecoder(blacklist).Decode(&replacements); err != nil {
-		panic(fmt.Errorf("failed to decode blacklist.json: %v", err))
-	}
-
-	// Compile regex patterns
-	patterns := make([]*regexp.Regexp, 0, len(replacements))
-	values := make([]string, 0, len(replacements))
-	for pattern, value := range replacements {
-		patterns = append(patterns, regexp.MustCompile(pattern))
-		values = append(values, value)
+	r := make(map[string]string)
+	if err := json.NewDecoder(b).Decode(&r); err != nil {
+		panic(fmt.Errorf("decode blacklist.json: %v", err))
 	}
 
-	// Process text files
-	txtFiles, err := filepath.Glob("*.txt")
+	p := make([]*regexp.Regexp, 0, len(r))
+	v := make([]string, 0, len(r))
+	for pattern, value := range r {
+		p = append(p, regexp.MustCompile(pattern))
+		v = append(v, value)
+	}
+
+	t, err := filepath.Glob("*.txt")
 	if err != nil {
 		panic(err)
 	}
 
-	for _, txtFile := range txtFiles {
-		// Open file
-		file, err := os.Open(txtFile)
+	for _, f := range t {
+		file, err := os.Open(f)
 		if err != nil {
-			fmt.Println(fmt.Errorf("failed to open file %s: %v", txtFile, err))
+			fmt.Println(fmt.Errorf("open file %s: %v", f, err))
 			continue
 		}
 		defer file.Close()
@@ -54,26 +50,23 @@ func main() {
 				break
 			}
 			if err != nil {
-				fmt.Println(fmt.Errorf("failed to read file %s: %v", txtFile, err))
+				fmt.Println(fmt.Errorf("read file %s: %v", f, err))
 				break
 			}
 
-			// Process and update text
 			text := buf[:n]
-			for i, pattern := range patterns {
-				text = pattern.ReplaceAll(text, []byte(values[i]))
+			for i, pattern := range p {
+				text = pattern.ReplaceAll(text, []byte(v[i]))
 			}
 
 			updated = append(updated, text...)
 		}
 
-		// Write updated content to file
-		err = os.WriteFile(txtFile, updated, os.ModePerm)
-		if err != nil {
-			fmt.Println(fmt.Errorf("failed to write file %s: %v", txtFile, err))
+		if err = os.WriteFile(f, updated, os.ModePerm); err != nil {
+			fmt.Println(fmt.Errorf("write file %s: %v", f, err))
 			continue
 		}
 
-		fmt.Printf("Text in %s updated.\n", txtFile)
+		fmt.Printf("Text in %s updated.\n", f)
 	}
 }
