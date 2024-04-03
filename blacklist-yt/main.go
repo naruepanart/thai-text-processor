@@ -6,107 +6,74 @@ import (
 	"io"
 	"os"
 	"path/filepath"
+	"regexp"
 )
 
-type Node struct {
-	children map[byte]*Node
-	isEnd    bool
-	value    string
-}
-
 func main() {
-	b, e := os.Open("blacklist.json")
-	if e != nil {
-		panic(fmt.Errorf("failed to open blacklist.json: %v", e))
+	// Open and parse blacklist JSON
+	blacklist, err := os.Open("blacklist.json")
+	if err != nil {
+		panic(fmt.Errorf("failed to open blacklist.json: %v", err))
 	}
-	defer b.Close()
+	defer blacklist.Close()
 
-	var r map[string]string
-	if e := json.NewDecoder(b).Decode(&r); e != nil {
-		panic(fmt.Errorf("failed to decode blacklist.json: %v", e))
-	}
-
-	root := &Node{children: make(map[byte]*Node)}
-	for p, v := range r {
-		addToTrie(root, p, v)
+	var replacements map[string]string
+	if err := json.NewDecoder(blacklist).Decode(&replacements); err != nil {
+		panic(fmt.Errorf("failed to decode blacklist.json: %v", err))
 	}
 
-	t, e := filepath.Glob("*.txt")
-	if e != nil {
-		panic(e)
+	// Compile regex patterns
+	patterns := make([]*regexp.Regexp, 0, len(replacements))
+	values := make([]string, 0, len(replacements))
+	for pattern, value := range replacements {
+		patterns = append(patterns, regexp.MustCompile(pattern))
+		values = append(values, value)
 	}
 
-	for _, f := range t {
-		file, e := os.Open(f)
-		if e != nil {
-			fmt.Println(fmt.Errorf("failed to open file %s: %v", f, e))
+	// Process text files
+	txtFiles, err := filepath.Glob("*.txt")
+	if err != nil {
+		panic(err)
+	}
+
+	for _, txtFile := range txtFiles {
+		// Open file
+		file, err := os.Open(txtFile)
+		if err != nil {
+			fmt.Println(fmt.Errorf("failed to open file %s: %v", txtFile, err))
 			continue
 		}
 		defer file.Close()
 
-		var u []byte
+		var updated []byte
 		buf := make([]byte, 1024)
 
 		for {
-			n, e := file.Read(buf)
-			if e == io.EOF {
+			n, err := file.Read(buf)
+			if err == io.EOF {
 				break
 			}
-			if e != nil {
-				fmt.Println(fmt.Errorf("failed to read file %s: %v", f, e))
+			if err != nil {
+				fmt.Println(fmt.Errorf("failed to read file %s: %v", txtFile, err))
 				break
 			}
 
+			// Process and update text
 			text := buf[:n]
-			updatedText := process(root, text)
-			u = append(u, updatedText...)
+			for i, pattern := range patterns {
+				text = pattern.ReplaceAll(text, []byte(values[i]))
+			}
+
+			updated = append(updated, text...)
 		}
 
-		if e := os.WriteFile(f, u, os.ModePerm); e != nil {
-			fmt.Println(fmt.Errorf("failed to write file %s: %v", f, e))
+		// Write updated content to file
+		err = os.WriteFile(txtFile, updated, os.ModePerm)
+		if err != nil {
+			fmt.Println(fmt.Errorf("failed to write file %s: %v", txtFile, err))
 			continue
 		}
-		fmt.Printf("Text in %s updated.\n", f)
-	}
-}
 
-func addToTrie(root *Node, pattern, value string) {
-	node := root
-	for i := 0; i < len(pattern); i++ {
-		char := pattern[i]
-		if node.children == nil {
-			node.children = make(map[byte]*Node)
-		}
-		if _, ok := node.children[char]; !ok {
-			node.children[char] = &Node{}
-		}
-		node = node.children[char]
+		fmt.Printf("Text in %s updated.\n", txtFile)
 	}
-	node.isEnd = true
-	node.value = value
-}
-
-func process(root *Node, text []byte) []byte {
-	var updated []byte
-	node := root
-	start := 0
-	for i := 0; i < len(text); i++ {
-		char := text[i]
-		if node.children[char] != nil {
-			node = node.children[char]
-			if node.isEnd {
-				updated = append(updated, []byte(node.value)...)
-				start = i + 1
-				node = root
-			}
-		} else {
-			updated = append(updated, text[start:i+1]...)
-			start = i + 1
-			node = root
-		}
-	}
-	if start < len(text) {
-		updated = append(updated, text[start:]...)
-	}
-	return updated
 }
