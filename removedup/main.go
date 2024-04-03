@@ -25,19 +25,27 @@ func main() {
 
 	decoder := json.NewDecoder(inputFile)
 
+	// Use a slice with a predefined capacity for seenKeys
+	const maxKeys = 100 // Adjust the capacity based on your needs
+	var seenKeys = make([]string, 0, maxKeys)
 	var data map[string]interface{}
 	if err := decoder.Decode(&data); err != nil {
 		fmt.Println("Error decoding JSON:", err)
 		return
 	}
 
-	// Filtering out duplicate keys using a hash table
-	seenKeys := make(map[string]bool)
-	filteredData := make(map[string]interface{})
-	for key, value := range data {
-		if !seenKeys[key] {
-			filteredData[key] = value
-			seenKeys[key] = true
+	// Filtering out duplicate keys
+	for key := range data {
+		found := false
+		for i := 0; i < len(seenKeys); i++ {
+			if seenKeys[i] == key {
+				delete(data, key)
+				found = true
+				break
+			}
+		}
+		if !found {
+			seenKeys = append(seenKeys, key)
 		}
 	}
 
@@ -52,7 +60,7 @@ func main() {
 	encoder := json.NewEncoder(outputFile)
 
 	// Encode and write the filtered data
-	if err := encoder.Encode(filteredData); err != nil {
+	if err := encoder.Encode(data); err != nil {
 		fmt.Println("Error encoding and writing JSON:", err)
 		return
 	}
