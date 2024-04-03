@@ -10,7 +10,8 @@ import (
 )
 
 func main() {
-	if err := processFiles(); err != nil {
+	err := processFiles(); 
+	if err != nil {
 		fmt.Printf("Error: %v\n", err)
 	}
 }
