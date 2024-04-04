@@ -10,19 +10,19 @@ import (
 )
 
 func main() {
-	err := processFiles(); 
+	err := process()
 	if err != nil {
 		fmt.Printf("Error: %v\n", err)
 	}
 }
 
-func processFiles() error {
-	bl, err := loadBlacklist("blacklist.json")
+func process() error {
+	bl, err := load("blacklist.json")
 	if err != nil {
 		return fmt.Errorf("loading blacklist: %v", err)
 	}
 
-	rx, rp, err := compileRegex(bl)
+	rx, rp, err := compile(bl)
 	if err != nil {
 		return fmt.Errorf("compiling regex: %v", err)
 	}
@@ -33,7 +33,7 @@ func processFiles() error {
 	}
 
 	for _, fn := range files {
-		if err := processFile(fn, rx, rp); err != nil {
+		if err := handleFile(fn, rx, rp); err != nil {
 			fmt.Printf("Error processing %s: %v\n", fn, err)
 		}
 	}
@@ -41,7 +41,7 @@ func processFiles() error {
 	return nil
 }
 
-func loadBlacklist(filename string) (map[string]string, error) {
+func load(filename string) (map[string]string, error) {
 	f, err := os.Open(filename)
 	if err != nil {
 		return nil, err
@@ -55,7 +55,7 @@ func loadBlacklist(filename string) (map[string]string, error) {
 	return bl, nil
 }
 
-func compileRegex(bl map[string]string) ([]*regexp.Regexp, [][]byte, error) {
+func compile(bl map[string]string) ([]*regexp.Regexp, [][]byte, error) {
 	var rx []*regexp.Regexp
 	var rp [][]byte
 
@@ -71,7 +71,7 @@ func compileRegex(bl map[string]string) ([]*regexp.Regexp, [][]byte, error) {
 	return rx, rp, nil
 }
 
-func processFile(filename string, rx []*regexp.Regexp, rp [][]byte) error {
+func handleFile(filename string, rx []*regexp.Regexp, rp [][]byte) error {
 	file, err := os.OpenFile(filename, os.O_RDWR, os.ModePerm)
 	if err != nil {
 		return err
