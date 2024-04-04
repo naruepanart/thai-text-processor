@@ -6,11 +6,6 @@ import (
 	"os"
 )
 
-type JSONEntry struct {
-	Key   string      `json:"key"`
-	Value interface{} `json:"value"`
-}
-
 func main() {
 	const jsonFilePath = "../blacklist-yt/blacklist.json"
 
