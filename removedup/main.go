@@ -6,48 +6,48 @@ import (
 	"os"
 )
 
-type Entry struct {
+type JSONEntry struct {
 	Key   string      `json:"key"`
 	Value interface{} `json:"value"`
 }
 
 func main() {
-	file := "../blacklist-yt/blacklist.json"
+	const jsonFilePath = "../blacklist-yt/blacklist.json"
 
-	input, err := os.Open(file)
+	inputFile, err := os.Open(jsonFilePath)
 	if err != nil {
 		fmt.Println("Error opening file:", err)
 		return
 	}
-	defer input.Close()
+	defer inputFile.Close()
 
-	decoder := json.NewDecoder(input)
+	decoder := json.NewDecoder(inputFile)
 
-	var data map[string]interface{}
-	if err := decoder.Decode(&data); err != nil {
+	var jsonData map[string]interface{}
+	if err := decoder.Decode(&jsonData); err != nil {
 		fmt.Println("Error decoding JSON:", err)
 		return
 	}
 
-	seen := make(map[string]bool)
-	for key := range data {
-		if seen[key] {
-			delete(data, key)
+	uniqueKeys := make(map[string]bool)
+	for key := range jsonData {
+		if uniqueKeys[key] {
+			delete(jsonData, key)
 		} else {
-			seen[key] = true
+			uniqueKeys[key] = true
 		}
 	}
 
-	output, err := os.Create(file)
+	outputFile, err := os.Create(jsonFilePath)
 	if err != nil {
 		fmt.Println("Error creating file:", err)
 		return
 	}
-	defer output.Close()
+	defer outputFile.Close()
 
-	encoder := json.NewEncoder(output)
+	encoder := json.NewEncoder(outputFile)
 
-	if err := encoder.Encode(data); err != nil {
+	if err := encoder.Encode(jsonData); err != nil {
 		fmt.Println("Error encoding and writing JSON:", err)
 		return
 	}
