@@ -23,25 +23,18 @@ func main() {
 
 	decoder := json.NewDecoder(input)
 
-	max := 100
-	var seen = make([]string, 0, max)
 	var data map[string]interface{}
 	if err := decoder.Decode(&data); err != nil {
 		fmt.Println("Error decoding JSON:", err)
 		return
 	}
 
+	seen := make(map[string]bool)
 	for key := range data {
-		found := false
-		for i := 0; i < len(seen); i++ {
-			if seen[i] == key {
-				delete(data, key)
-				found = true
-				break
-			}
-		}
-		if !found {
-			seen = append(seen, key)
+		if seen[key] {
+			delete(data, key)
+		} else {
+			seen[key] = true
 		}
 	}
 
