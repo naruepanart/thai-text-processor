@@ -7,7 +7,7 @@ import (
 )
 
 func main() {
-	const jsonFilePath = "../blacklist-yt/blacklist.json"
+	const jsonFilePath = "./blacklist.json"
 
 	inputFile, err := os.Open(jsonFilePath)
 	if err != nil {
