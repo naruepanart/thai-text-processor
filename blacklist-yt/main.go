@@ -6,6 +6,7 @@ import (
 	"os"
 	"path/filepath"
 	"regexp"
+	"strconv"
 )
 
 func main() {
@@ -81,10 +82,25 @@ func processFileWithBlacklist(filename string, regexPatterns []*regexp.Regexp, r
 		updatedContent = pattern.ReplaceAll(updatedContent, replacements[i])
 	}
 
+	// Convert B.E. years to A.D. if they start with "25"
+	updatedContent = convertBEToAD(updatedContent)
+
 	if err := os.WriteFile(filename, updatedContent, os.ModePerm); err != nil {
 		return err
 	}
 
 	fmt.Printf("Text in %s updated.\n", filename)
 	return nil
+}
+
+func convertBEToAD(content []byte) []byte {
+	re := regexp.MustCompile(`(\d{4})`)
+	return re.ReplaceAllFunc(content, func(match []byte) []byte {
+		yearBE, _ := strconv.Atoi(string(match))
+		if yearBE >= 2500 {
+			yearAD := yearBE - 543
+			return []byte(strconv.Itoa(yearAD))
+		}
+		return match
+	})
 }
