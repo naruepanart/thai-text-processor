@@ -97,7 +97,7 @@ func convertBEToAD(content []byte) []byte {
 	re := regexp.MustCompile(`(\d{4})`)
 	return re.ReplaceAllFunc(content, func(match []byte) []byte {
 		yearBE, _ := strconv.Atoi(string(match))
-		if yearBE >= 2500 {
+		if yearBE >= 2400 {
 			yearAD := yearBE - 543
 			return []byte(strconv.Itoa(yearAD))
 		}
