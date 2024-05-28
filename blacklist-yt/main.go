@@ -2,6 +2,7 @@ package main
 
 import (
 	"encoding/json"
+	"fmt"
 	"os"
 	"path/filepath"
 	"regexp"
@@ -10,23 +11,33 @@ import (
 
 func main() {
 	// Load the blacklist from the "blacklist.json" file
+	// This involves opening the file and decoding the JSON data into a
+	// map of strings to strings.
 	bl, err := loadBlacklist()
 	if err != nil {
-		// Panic if there's an error loading the blacklist
-		panic(err)
+		fmt.Println(err)
+		return
 	}
 
 	// Compile the blacklist into regexps and replacement strings
+	// This involves compiling each pattern in the blacklist into a
+	// regex and creating a slice of regexps and a slice of byte slices
+	// containing the replacement strings.
 	rp, r := compile(bl)
 
 	// Find all the text files in the directory
+	// This involves using the filepath.Glob function to find all files
+	// in the current directory with the extension ".txt".
 	tfs, err := findTextFiles()
 	if err != nil {
-		// Panic if there's an error finding the text files
-		panic(err)
+		fmt.Println(err)
+		return
 	}
 
 	// Process each text file with the compiled blacklist
+	// This involves reading each file into a byte slice, updating the
+	// content of the byte slice using the regexps and replacement strings,
+	// and then writing the updated byte slice back to the file.
 	processFiles(tfs, rp, r)
 }
 
