@@ -7,43 +7,37 @@ import (
 )
 
 func main() {
-	const jsonFilePath = "./blacklist.json"
-
-	inputFile, err := os.Open(jsonFilePath)
+	f, err := os.Open("./blacklist.json")
 	if err != nil {
-		fmt.Println("Error opening file:", err)
+		fmt.Println(err)
 		return
 	}
-	defer inputFile.Close()
+	defer f.Close()
 
-	decoder := json.NewDecoder(inputFile)
-
-	var jsonData map[string]interface{}
-	if err := decoder.Decode(&jsonData); err != nil {
-		fmt.Println("Error decoding JSON:", err)
+	var d map[string]interface{}
+	if err := json.NewDecoder(f).Decode(&d); err != nil {
+		fmt.Println(err)
 		return
 	}
 
-	uniqueKeys := make(map[string]bool)
-	for key := range jsonData {
-		if uniqueKeys[key] {
-			delete(jsonData, key)
+	m := make(map[string]bool)
+	for k := range d {
+		if m[k] {
+			delete(d, k)
 		} else {
-			uniqueKeys[key] = true
+			m[k] = true
 		}
 	}
 
-	outputFile, err := os.Create(jsonFilePath)
+	f, err = os.Create("./blacklist.json")
 	if err != nil {
-		fmt.Println("Error creating file:", err)
+		fmt.Println(err)
 		return
 	}
-	defer outputFile.Close()
+	defer f.Close()
 
-	encoder := json.NewEncoder(outputFile)
-
-	if err := encoder.Encode(jsonData); err != nil {
-		fmt.Println("Error encoding and writing JSON:", err)
+	if err := json.NewEncoder(f).Encode(d); err != nil {
+		fmt.Println(err)
 		return
 	}
 
