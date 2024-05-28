@@ -7,7 +7,7 @@ import (
 )
 
 func main() {
-	f, err := os.Open("./blacklist.json")
+	f, err := os.Open("blacklist.json")
 	if err != nil {
 		fmt.Println(err)
 		return
@@ -29,7 +29,7 @@ func main() {
 		}
 	}
 
-	f, err = os.Create("./blacklist.json")
+	f, err = os.Create("blacklist.json")
 	if err != nil {
 		fmt.Println(err)
 		return
