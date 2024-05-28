@@ -11,8 +11,6 @@ import (
 
 func main() {
 	// Load the blacklist from the "blacklist.json" file
-	// This involves opening the file and decoding the JSON data into a
-	// map of strings to strings.
 	bl := make(map[string]string)
 	f, err := os.Open("blacklist.json")
 	if err != nil {
@@ -28,9 +26,6 @@ func main() {
 	}
 
 	// Compile the blacklist into regexps and replacement strings
-	// This involves compiling each pattern in the blacklist into a
-	// regex and creating a slice of regexps and a slice of byte slices
-	// containing the replacement strings.
 	var rs []*regexp.Regexp
 	var rb [][]byte
 	for p, r := range bl {
@@ -46,25 +41,20 @@ func main() {
 		rb = append(rb, []byte(r))
 	}
 
-	// Find all the text files in the directory
-	// This involves using the filepath.Glob function to find all files
-	// in the current directory with the extension ".txt".
-	tfs, err := filepath.Glob("*.txt")
+	// Get a list of all text files in the current directory
+	tf, err := filepath.Glob("*.txt")
 	if err != nil {
 		fmt.Println(err)
 		return
 	}
 
-	// Process each text file with the compiled blacklist
-	// This involves reading each file into a byte slice, updating the
-	// content of the byte slice using the regexps and replacement strings,
-	// and then writing the updated byte slice back to the file.
-	for _, name := range tfs {
+	// Loop through the text files
+	for _, name := range tf {
 		// Read the file into a byte slice
 		data, err := os.ReadFile(name)
 		if err != nil {
-			// If there's an error, skip this file
-			continue
+			fmt.Println(err)
+			return
 		}
 
 		// Update the content of the byte slice using the regexps and
@@ -86,9 +76,10 @@ func main() {
 		})
 
 		// Write the updated byte slice back to the file
-		if err := os.WriteFile(name, data, os.ModePerm); err != nil {
-			// If there's an error, skip this file
-			continue
+		err = os.WriteFile(name, data, os.ModePerm)
+		if err != nil {
+			fmt.Println(err)
+			return
 		}
 	}
 }
