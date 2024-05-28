@@ -11,75 +11,101 @@ import (
 
 func main() {
 	// Load the blacklist from the "blacklist.json" file
-	bl := make(map[string]string)
-	f, err := os.Open("blacklist.json")
-	if err != nil {
-		fmt.Println(err)
-		return
-	}
-	defer f.Close()
-
-	err = json.NewDecoder(f).Decode(&bl)
-	if err != nil {
-		fmt.Println(err)
-		return
-	}
+	bl := loadBlacklist()
 
 	// Compile the blacklist into regexps and replacement strings
-	var rs []*regexp.Regexp
-	var rb [][]byte
-	for p, r := range bl {
-		// Compile the pattern string into a regex
-		re, err := regexp.Compile(p)
-		if err != nil {
-			fmt.Println(err)
-			return
-		}
-		// Append the regex to the slice of regexps
-		rs = append(rs, re)
-		// Append the replacement string as a byte slice to the slice of byte slices
-		rb = append(rb, []byte(r))
-	}
+	rs, rb := compileBlacklist(bl)
 
 	// Get a list of all text files in the current directory
-	tf, err := filepath.Glob("*.txt")
-	if err != nil {
-		fmt.Println(err)
-		return
-	}
+	tf := getTextFiles()
 
 	// Loop through the text files
 	for _, name := range tf {
 		// Read the file into a byte slice
-		data, err := os.ReadFile(name)
-		if err != nil {
-			fmt.Println(err)
-			return
-		}
+		data := readFile(name)
 
-		// Update the content of the byte slice using the regexps and
-		// replacement strings
-		for i, r := range rs {
-			// Replace all occurrences of the regex in the byte slice with the
-			// corresponding replacement string from the slice of byte slices
-			data = r.ReplaceAll(data, rb[i])
-		}
+		// Update the content of the byte slice using the regexps and replacement strings
+		data = updateContent(data, rs, rb)
 
 		// Convert any years found in the text to the Buddhist Era
-		r := regexp.MustCompile(`(\d{4})`)
-		data = r.ReplaceAllFunc(data, func(m []byte) []byte {
-			y, _ := strconv.Atoi(string(m))
-			if y >= 2400 {
-				return []byte(strconv.Itoa(y - 543))
-			}
-			return m
-		})
+		data = convertYears(data)
 
 		// Write the updated byte slice back to the file
-		err = os.WriteFile(name, data, os.ModePerm)
+		writeFile(name, data)
+	}
+}
+
+func loadBlacklist() map[string]string {
+	f, err := os.Open("blacklist.json")
+	if err != nil {
+		fmt.Println(err)
+		return nil
+	}
+	defer f.Close()
+
+	bl := make(map[string]string)
+	err = json.NewDecoder(f).Decode(&bl)
+	if err != nil {
+		fmt.Println(err)
+		return nil
+	}
+	return bl
+}
+
+func compileBlacklist(bl map[string]string) ([]*regexp.Regexp, [][]byte) {
+	var rs []*regexp.Regexp
+	var rb [][]byte
+	for p, r := range bl {
+		re, err := regexp.Compile(p)
 		if err != nil {
 			fmt.Println(err)
-			return
+			return nil, nil
 		}
+		rs = append(rs, re)
+		rb = append(rb, []byte(r))
+	}
+	return rs, rb
+}
+
+func getTextFiles() []string {
+	tf, err := filepath.Glob("*.txt")
+	if err != nil {
+		fmt.Println(err)
+		return nil
+	}
+	return tf
+}
+
+func readFile(name string) []byte {
+	data, err := os.ReadFile(name)
+	if err != nil {
+		fmt.Println(err)
+		return nil
+	}
+	return data
+}
+
+func updateContent(data []byte, rs []*regexp.Regexp, rb [][]byte) []byte {
+	for i, r := range rs {
+		data = r.ReplaceAll(data, rb[i])
+	}
+	return data
+}
+
+func convertYears(data []byte) []byte {
+	r := regexp.MustCompile(`(\d{4})`)
+	return r.ReplaceAllFunc(data, func(m []byte) []byte {
+		y, _ := strconv.Atoi(string(m))
+		if y >= 2400 {
+			return []byte(strconv.Itoa(y - 543))
+		}
+		return m
+	})
+}
+
+func writeFile(name string, data []byte) {
+	err := os.WriteFile(name, data, os.ModePerm)
+	if err != nil {
+		fmt.Println(err)
 	}
 }
